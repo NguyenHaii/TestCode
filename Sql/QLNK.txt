@@ -1,0 +1,138 @@
+drop database if exists quanlynhankhau;
+go
+create database quanlynhankhau
+go
+use quanlynhankhau
+go
+create table QuanHuyen (
+	MaQH int identity not null,
+	TenQH nvarchar(100)
+)
+create table DuongPho (
+	DuongID int not null,
+	MaQH int not null,
+	TenDuong nvarchar(max) not null,
+	NgayDuyet datetime not null
+)
+create table NhaTrenPho(
+	NhaID int not null,
+	DuongID int not null,
+	ChuHo nvarchar(50),
+	Dientich money,
+	sonhankhau int
+)
+go
+alter table QuanHuyen add constraint PK_QuanHuyen
+primary key (MaQH);
+alter table DuongPho add constraint PK_DuongPho
+primary key (DuongID);
+alter table NhaTrenPho add constraint PK_NhaTrenPho
+primary key (NhaID);
+go
+alter table NhaTrenPho add constraint FK_NhaTrenPho_DuongPho
+foreign key (DuongID) references DuongPho(DuongID);
+alter table DuongPho add constraint FK_DuongPho_QuanHuyen
+foreign key (MaQH) references QuanHuyen(MaQH);
+go
+alter table DuongPho add constraint CK_DuongPho_NgayDuyenTen
+check (NgayDuyet between '1945-09-02' and getdate());
+
+go
+insert into QuanHuyen (TenQH) values (N'Ba Đình'), (N'Hoàng mai');
+insert into QuanHuyen (TenQH) values ('ố ớ ế ờ');
+
+select * from QuanHuyen;
+delete from QuanHuyen;
+--alter table DuongPho drop constraint FK_DuongPho_QuanHuyen
+--truncate table QuanHuyen;
+
+go
+insert into DuongPho (DuongID,MaQH,TenDuong,NgayDuyet)
+values (1,1,N'Trường Chinh','1946-10-19'),
+(2,1,N'Tây Sơn','1998-12-30'),
+(3,2,N'Chùa Bộc','1975-09-21');
+go
+insert into NhaTrenPho (NhaID,DuongID,ChuHo,Dientich,SoNhanKhau)
+values (1,1,N'Toàn Ngô Vĩnh',100,4),
+(2,1,N'Lê Văn A',20,12),
+(3,2,N'Nguyễn Thị B',40,1)
+
+select * from QuanHuyen;
+select * from DuongPho;
+select * from NhaTrenPho;
+
+update DuongPho set [TenDuong] = N'Thái Hà'
+where [TenDuong] = N'Chùa Bộc';
+go
+create view vw_All_NhaTrenPho as
+select NhaTrenPho.*,DuongPho.TenDuong,QuanHuyen.TenQH from NhaTrenPho join 
+DuongPho on NhaTrenPho.DuongID = DuongPho.DuongID
+join QuanHuyen on QuanHuyen.MaQH = DuongPho.MaQH
+go
+create view view_AVG_NhaTrenPho as
+select avg(NhaTrenPho.Dientich) as dientichtrungbinh,
+avg(NhaTrenPho.sonhankhau) as Nhankhautrungbinh
+,DuongPho.DuongID, DuongPho.TenDuong from NhaTrenPho join DuongPho
+on NhaTrenPho.DuongID = DuongPho.DuongID
+group by DuongPho.DuongID, DuongPho.TenDuong
+go
+select * from view_AVG_NhaTrenPho 
+order by dientichtrungbinh asc, Nhankhautrungbinh asc;
+go
+
+select * from DuongPho;
+go
+create proc  sp_NgayDuyetTen_DuongPho @NgayDuyet datetime
+as
+begin
+select DuongPho.*,QuanHuyen.TenQH as TenQH from DuongPho join  QuanHuyen
+on DuongPho.MaQH = QuanHuyen.MaQH where NgayDuyet = @NgayDuyet
+end
+--drop proc sp_NgayDuyetTen_DuongPho;
+exec sp_NgayDuyetTen_DuongPho '1998-12-30' 
+
+alter table NhaTrenPho drop constraint PK_NhaTrenPho;
+go
+create clustered index CI_NhaTrenPho_NhaID on NhaTrenPho(NhaID)
+go
+create unique nonclustered index UI_QuanHuyen_TenQH on QuanHuyen(TenQH);
+
+--drop trigger TG_NhaTrenPho_Update;
+go
+-- cach 1
+--create trigger TG_NhaTrenPho_Update on NhaTrenPho
+--for update as
+--begin
+--if  0 > any (select SoNhanKhau from inserted)
+--	begin
+--		print 'SoNhanKhau phai lon hon 0';
+--		rollback transaction;
+--	end
+--end;
+-- cach 2
+create trigger TG_NhaTrenPho_Update on NhaTrenPho
+for update as
+begin
+if exists(select * from inserted  where SoNhanKhau < 0)
+	begin
+		print 'SoNhanKhau phai lon hon 0';
+		rollback transaction;
+	end
+end;
+go
+select * from NhaTrenPho;
+
+--insert into NhaTrenPho values (4,2,'ABC',20,-1);
+update NhaTrenPho set sonhankhau = -1 where NhaID = 4
+or NhaID = 3;
+
+go
+create trigger TG_DuongPho_Instead_Of_Delete on DuongPho
+instead of delete as
+begin
+raiserror('Khong xoa duoc duong pho',16,1000);
+end
+go
+select * from DuongPho
+delete from DuongPho  where DuongID = 3;
+go
