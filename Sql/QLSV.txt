@@ -147,7 +147,7 @@ HAVING SUM(r.Mark) > 10;
 
 
 
-*Quản lý sinh viên
+*Quản lý nhân khẩu
 drop database if exists quanlynhankhau;
 go
 create database quanlynhankhau
