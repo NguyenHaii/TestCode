@@ -43,8 +43,6 @@ insert into QuanHuyen (TenQH) values ('ố ớ ế ờ');
 
 select * from QuanHuyen;
 delete from QuanHuyen;
---alter table DuongPho drop constraint FK_DuongPho_QuanHuyen
---truncate table QuanHuyen;
 
 go
 insert into DuongPho (DuongID,MaQH,TenDuong,NgayDuyet)
@@ -88,7 +86,7 @@ begin
 select DuongPho.*,QuanHuyen.TenQH as TenQH from DuongPho join  QuanHuyen
 on DuongPho.MaQH = QuanHuyen.MaQH where NgayDuyet = @NgayDuyet
 end
---drop proc sp_NgayDuyetTen_DuongPho;
+
 exec sp_NgayDuyetTen_DuongPho '1998-12-30' 
 
 alter table NhaTrenPho drop constraint PK_NhaTrenPho;
@@ -97,19 +95,9 @@ create clustered index CI_NhaTrenPho_NhaID on NhaTrenPho(NhaID)
 go
 create unique nonclustered index UI_QuanHuyen_TenQH on QuanHuyen(TenQH);
 
---drop trigger TG_NhaTrenPho_Update;
+
 go
--- cach 1
---create trigger TG_NhaTrenPho_Update on NhaTrenPho
---for update as
---begin
---if  0 > any (select SoNhanKhau from inserted)
---	begin
---		print 'SoNhanKhau phai lon hon 0';
---		rollback transaction;
---	end
---end;
--- cach 2
+
 create trigger TG_NhaTrenPho_Update on NhaTrenPho
 for update as
 begin
@@ -122,7 +110,6 @@ end;
 go
 select * from NhaTrenPho;
 
---insert into NhaTrenPho values (4,2,'ABC',20,-1);
 update NhaTrenPho set sonhankhau = -1 where NhaID = 4
 or NhaID = 3;
 
